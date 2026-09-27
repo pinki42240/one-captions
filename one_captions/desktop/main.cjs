@@ -35,7 +35,7 @@ app.whenReady().then(async()=>{
   const backendExe=standalone?path.join(process.resourcesPath,'runtime',process.platform==='win32'?'one-backend.exe':'one-backend'):python;
   const workerExe=standalone?backendExe:null;
   const bins=path.join(root,'bin');
-  const env={...process.env,PYTHONUNBUFFERED:'1',ONE_ENGINE_ROOT:root,ONE_DATA_DIR:dataDir,ONE_OUTPUT_DIR:path.join(dataDir,'output'),ONE_WHISPER_MODEL:path.join(dataDir,'models','hebrew'),ONE_AI_MODEL:path.join(dataDir,'models','ai','Qwen3-4B-Q4_K_M.gguf'),ONE_WORKER_BINARY:workerExe||'',ONE_LLAMA_SERVER:path.join(bins,process.platform==='win32'?'llama-server.exe':'llama-server'),PINI_FFMPEG:path.join(bins,process.platform==='win32'?'ffmpeg.exe':'ffmpeg'),PINI_FFPROBE:path.join(bins,process.platform==='win32'?'ffprobe.exe':'ffprobe'),PATH:bins+path.delimiter+process.env.PATH};
+  const env={...process.env,PYTHONUNBUFFERED:'1',PYTHONUTF8:'1',ONE_ENGINE_ROOT:root,ONE_DATA_DIR:dataDir,ONE_OUTPUT_DIR:path.join(dataDir,'output'),ONE_WHISPER_MODEL:path.join(dataDir,'models','hebrew'),ONE_AI_MODEL:path.join(dataDir,'models','ai','Qwen3-4B-Q4_K_M.gguf'),ONE_WORKER_BINARY:workerExe||'',ONE_LLAMA_SERVER:path.join(bins,process.platform==='win32'?'llama-server.exe':'llama-server'),PINI_FFMPEG:path.join(bins,process.platform==='win32'?'ffmpeg.exe':'ffmpeg'),PINI_FFPROBE:path.join(bins,process.platform==='win32'?'ffprobe.exe':'ffprobe'),PATH:bins+path.delimiter+process.env.PATH};
   if(standalone){
    const model=path.join(dataDir,'models','hebrew','model.bin');const ai=env.ONE_AI_MODEL;
    if(!process.env.ONE_SKIP_SETUP_TEST&&(!fs.existsSync(model)||!fs.existsSync(ai))){
