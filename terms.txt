@@ -1,0 +1,2 @@
+# Add optional Hebrew names, products and salon terms, one per line.
+# This file is intentionally blank in the public release source.

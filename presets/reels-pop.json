@@ -1,0 +1,18 @@
+{
+  "font": "Noto Sans Hebrew",
+  "font_file": "NotoSansHebrew.ttf",
+  "font_size_ratio": 0.058,
+  "max_width_ratio": 0.8,
+  "bottom_margin_ratio": 0.23,
+  "max_words": 7,
+  "max_duration": 3.0,
+  "pause_break": 0.45,
+  "primary_color": "&H00FFFFFF",
+  "outline_color": "&H00101010",
+  "outline_ratio": 0.065,
+  "shadow": 1,
+  "animation": "pop",
+  "fade_ms": 90,
+  "crf": 17,
+  "encoder_preset": "slow"
+}

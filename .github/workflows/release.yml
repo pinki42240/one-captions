@@ -1,0 +1,78 @@
+name: Desktop release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            name: macOS
+            artifact: macos
+          - os: windows-2025
+            name: Windows
+            artifact: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: one_captions/package-lock.json
+      - name: Privacy audit
+        run: python scripts/audit_source.py
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.lock pyinstaller==6.16.0
+      - name: Test engine and desktop backend
+        run: |
+          python -m unittest discover -s tests -p "test_*.py"
+          python -m unittest discover -s one_captions/tests -p "test_*.py"
+      - name: Stage native tools and backend
+        run: |
+          python scripts/fetch_binaries.py
+          python scripts/build_runtime.py
+          python scripts/smoke_runtime.py
+      - name: Install desktop dependencies
+        working-directory: one_captions
+        run: npm ci
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
+        working-directory: one_captions
+        run: npm run build:mac -- --publish never
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        working-directory: one_captions
+        run: npm run build:win -- --publish never
+      - name: Smoke the packaged desktop app
+        run: python scripts/smoke_desktop.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-captions-${{ matrix.artifact }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: one-captions-*
+          merge-multiple: true
+          path: dist
+      - name: Publish only verified platform builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/*.dmg dist/*.exe --repo "${GITHUB_REPOSITORY}" --verify-tag --title "ONE Captions ${GITHUB_REF_NAME}" --notes "macOS Intel and Windows x64 desktop installers. First launch downloads the Hebrew transcription and local assistant models into the user's application data."
