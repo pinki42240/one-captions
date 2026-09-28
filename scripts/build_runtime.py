@@ -13,7 +13,7 @@ for name in ('adapter.py','ai_provider.py','fast_commands.py','server.py','worke
 if (ENGINE/'one_captions/static').exists():shutil.rmtree(ENGINE/'one_captions/static')
 shutil.copytree(ROOT/'one_captions/static',ENGINE/'one_captions/static')
 assert (ENGINE/'bin'/('ffmpeg.exe' if os.name=='nt' else 'ffmpeg')).is_file(),'Run fetch_binaries.py first.'
-args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--contents-directory','.','--name','one-backend','--paths',str(ROOT),'--paths',str(ROOT/'one_captions'),'--distpath',str(RUNTIME),'--workpath',str(ROOT/'build/pyinstaller'),'--specpath',str(ROOT/'build'),
+args=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--onedir','--contents-directory','.','--name','one-backend','--exclude-module','pkg_resources','--paths',str(ROOT),'--paths',str(ROOT/'one_captions'),'--distpath',str(RUNTIME),'--workpath',str(ROOT/'build/pyinstaller'),'--specpath',str(ROOT/'build'),
  '--collect-all','faster_whisper','--collect-all','ctranslate2','--collect-all','onnxruntime','--collect-all','tokenizers','--collect-all','huggingface_hub','--collect-all','av','--collect-all','PIL',str(ROOT/'one_captions/backend_entry.py')]
 subprocess.run(args,check=True)
 exe=RUNTIME/'one-backend'/('one-backend.exe' if os.name=='nt' else 'one-backend')

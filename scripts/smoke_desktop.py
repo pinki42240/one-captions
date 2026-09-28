@@ -17,8 +17,10 @@ with tempfile.TemporaryDirectory() as temp:
   state=json.loads(files[0].read_text());base=f"http://127.0.0.1:{state['port']}"
   request=urllib.request.Request(base+'/api/health',headers={'X-One-Token':state['token']})
   with urllib.request.urlopen(request,timeout=5) as response:assert json.load(response)['ready']
-  with urllib.request.urlopen(base+'/') as response:assert b'ONE' in response.read()
-  print('Packaged desktop app and backend: OK')
+  with urllib.request.urlopen(base+'/') as response:html=response.read().decode('utf-8')
+  assert '© 2027 PINI COHEN. All rights reserved.' in html,'Copyright footer missing from packaged UI'
+  assert 'סטודיו לכתוביות' not in html and 'הפרויקטים שלי' not in html,'Welcome header contains removed labels'
+  print('Packaged desktop app, backend, welcome and copyright footer: OK')
  finally:
   app.terminate()
   try:app.wait(timeout=10)
