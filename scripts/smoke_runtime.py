@@ -3,6 +3,7 @@ import json,os,subprocess,tempfile,time,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];ENGINE=ROOT/'release/engine';BIN=ENGINE/'bin'
 EXE=ROOT/'release/runtime/one-backend'/('one-backend.exe' if os.name=='nt' else 'one-backend')
+subprocess.run([str(EXE),'--check-dependencies'],check=True,timeout=60)
 with tempfile.TemporaryDirectory() as temp:
  data=Path(temp);runtime=data/'runtime.json'
  env={**os.environ,'ONE_ENGINE_ROOT':str(ENGINE),'ONE_DATA_DIR':str(data),'ONE_OUTPUT_DIR':str(data/'output'),'PINI_FFMPEG':str(BIN/('ffmpeg.exe' if os.name=='nt' else 'ffmpeg')),'PINI_FFPROBE':str(BIN/('ffprobe.exe' if os.name=='nt' else 'ffprobe')),'ONE_LLAMA_SERVER':str(BIN/('llama-server.exe' if os.name=='nt' else 'llama-server'))}

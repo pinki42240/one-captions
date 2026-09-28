@@ -2,7 +2,7 @@
 
 ONE Captions bundles open-source components in its installers and downloads models on first launch. This notice is also included in the desktop resources.
 
-- FFmpeg and ffprobe: [FFmpeg](https://ffmpeg.org/) via [evermeet.cx macOS build](https://evermeet.cx/ffmpeg/) or [gyan.dev Windows build](https://www.gyan.dev/ffmpeg/builds/). FFmpeg builds with libx264 are distributed under GPL; source and license information are available from those providers and [FFmpeg](https://ffmpeg.org/legal.html). The build script records and checks the actual tools used.
+- FFmpeg and ffprobe: [FFmpeg](https://ffmpeg.org/) via [evermeet.cx macOS Intel build](https://evermeet.cx/ffmpeg/), [Martin Riedl's macOS Apple Silicon build](https://ffmpeg.martin-riedl.de/), or [gyan.dev Windows build](https://www.gyan.dev/ffmpeg/builds/). FFmpeg builds with libx264 are distributed under GPL; source and license information are available from those providers and [FFmpeg](https://ffmpeg.org/legal.html). The Apple Silicon archives are pinned to FFmpeg 9.0.2 and checked against the provider's SHA-256 values. The build script checks the actual tools used.
 - llama.cpp: [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp), official `b11223` CPU binaries, MIT license.
 - Noto Sans Hebrew: [Google Fonts](https://github.com/google/fonts/tree/main/ofl/notosanshebrew), SIL Open Font License 1.1. The complete font license is at `fonts/OFL.txt`.
 - ivrit-ai Whisper: [ivrit-ai/whisper-large-v3-ct2](https://huggingface.co/ivrit-ai/whisper-large-v3-ct2), downloaded to local application data at first launch; not in this repository or installer.

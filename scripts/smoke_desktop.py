@@ -1,8 +1,8 @@
 """Launch the packaged Electron shell and verify its bundled backend/UI."""
-import json,os,subprocess,tempfile,time,urllib.request
+import json,os,subprocess,sys,tempfile,time,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-EXE=ROOT/('dist/win-unpacked/ONE Captions.exe' if os.name=='nt' else 'dist/mac/ONE Captions.app/Contents/MacOS/ONE Captions')
+EXE=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/('dist/win-unpacked/ONE Captions.exe' if os.name=='nt' else 'dist/mac/ONE Captions.app/Contents/MacOS/ONE Captions')
 assert EXE.is_file(),EXE
 with tempfile.TemporaryDirectory() as temp:
  env={**os.environ,'ONE_USER_DATA_DIR':temp,'ONE_SKIP_SETUP_TEST':'1'}

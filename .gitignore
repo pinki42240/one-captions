@@ -28,6 +28,7 @@ __pycache__/
 /dist/
 /build/
 /release/
+/release-assets/
 *.app/
 *.dmg
 *.exe

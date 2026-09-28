@@ -1,12 +1,13 @@
 {
   "name": "one-captions",
   "productName": "ONE Captions",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "desktop/main.cjs",
   "private": true,
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac dmg --x64",
+    "build:mac:arm64": "electron-builder --mac dmg --arm64",
     "build:win": "electron-builder --win nsis --x64"
   },
   "devDependencies": {
@@ -45,14 +46,14 @@
       "category": "public.app-category.video",
       "identity": null,
       "icon": "assets/one.icns",
-      "artifactName": "ONE Captions for macOS-${version}.${ext}"
+      "artifactName": "ONE-Captions-macOS-${arch}-${version}.${ext}"
     },
     "win": {
       "target": [
         "nsis"
       ],
       "icon": "assets/one.ico",
-      "artifactName": "ONE Captions for Windows-${version}.${ext}"
+      "artifactName": "ONE-Captions-Windows-x64-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

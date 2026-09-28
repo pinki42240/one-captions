@@ -14,11 +14,20 @@ jobs:
       matrix:
         include:
           - os: macos-15-intel
-            name: macOS
-            artifact: macos
+            machine: x86_64
+            arch: x64
+            target: macos-intel-x64
+            build_script: build:mac
+          - os: macos-15
+            machine: arm64
+            arch: arm64
+            target: macos-apple-silicon-arm64
+            build_script: build:mac:arm64
           - os: windows-2025
-            name: Windows
-            artifact: windows
+            machine: amd64
+            arch: x64
+            target: windows-x64
+            build_script: build:win
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -30,10 +39,12 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: one_captions/package-lock.json
+      - name: Confirm native build runner
+        run: python -c "import platform; print(platform.machine()); assert platform.machine().lower() == '${{ matrix.machine }}'"
       - name: Privacy audit
         run: python scripts/audit_source.py
       - name: Install Python dependencies
-        run: python -m pip install -r requirements.lock pyinstaller==6.16.0
+        run: python -m pip install --only-binary=:all: -r requirements.lock pyinstaller==6.16.0
       - name: Test engine and desktop backend
         run: |
           python -m unittest discover -s tests -p "test_*.py"
@@ -49,32 +60,43 @@ jobs:
       - name: Build macOS DMG
         if: runner.os == 'macOS'
         working-directory: one_captions
-        run: npm run build:mac -- --publish never
+        run: npm run ${{ matrix.build_script }} -- --publish never
       - name: Build Windows installer
         if: runner.os == 'Windows'
         working-directory: one_captions
-        run: npm run build:win -- --publish never
-      - name: Smoke the packaged desktop app
+        run: npm run ${{ matrix.build_script }} -- --publish never
+      - name: Audit and smoke the app inside the macOS DMG
+        if: runner.os == 'macOS'
+        run: python scripts/verify_macos_dmg.py ${{ matrix.arch }}
+      - name: Audit the Windows package
+        if: runner.os == 'Windows'
+        run: python scripts/audit_package.py "dist/win-unpacked" x64
+      - name: Smoke the packaged Windows app
+        if: runner.os == 'Windows'
         run: python scripts/smoke_desktop.py
+      - name: Stage verified installer with a clear download name
+        run: python scripts/prepare_release_asset.py ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
         with:
-          name: one-captions-${{ matrix.artifact }}
-          path: |
-            dist/*.dmg
-            dist/*.exe
+          name: one-captions-${{ matrix.target }}
+          path: release-assets/*
           if-no-files-found: error
           retention-days: 14
+          compression-level: 0
   release:
     if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: one-captions-*
           merge-multiple: true
           path: dist
+      - name: Require all three verified installers
+        run: python scripts/verify_release_assets.py
       - name: Publish only verified platform builds
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/*.dmg dist/*.exe --repo "${GITHUB_REPOSITORY}" --verify-tag --title "ONE Captions ${GITHUB_REF_NAME}" --notes "macOS Intel and Windows x64 desktop installers. First launch downloads the Hebrew transcription and local assistant models into the user's application data."
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --repo "${GITHUB_REPOSITORY}" --verify-tag --title "ONE Captions ${GITHUB_REF_NAME}" --notes "Native macOS Intel x64, macOS Apple Silicon arm64, and Windows x64 installers. First launch downloads the Hebrew transcription and local assistant models into the user's application data."
