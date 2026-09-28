@@ -50,11 +50,12 @@ jobs:
         run: |
           python -m unittest discover -s tests -p "test_*.py"
           python -m unittest discover -s one_captions/tests -p "test_*.py"
-      - name: Stage native tools and backend
-        run: |
-          python scripts/fetch_binaries.py
-          python scripts/build_runtime.py
-          python scripts/smoke_runtime.py
+      - name: Stage native tools
+        run: python scripts/fetch_binaries.py
+      - name: Freeze Python backend
+        run: python scripts/build_runtime.py
+      - name: Smoke frozen backend and FFmpeg
+        run: python scripts/smoke_runtime.py
       - name: Install desktop dependencies
         working-directory: one_captions
         run: npm ci

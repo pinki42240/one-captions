@@ -1,7 +1,7 @@
 """Fetch OS-specific, Redistributable FFmpeg/ffprobe and llama-server.
 Build-time only. Models and personal data are never packaged.
 """
-import hashlib,io,os,platform,subprocess,tarfile,urllib.request,zipfile
+import hashlib,io,os,platform,subprocess,tarfile,time,urllib.error,urllib.request,zipfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 BIN=ROOT/'release/engine/bin';BIN.mkdir(parents=True,exist_ok=True)
@@ -11,9 +11,22 @@ ARM_FFMPEG_SHA256={
  'ffmpeg':'c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924',
  'ffprobe':'fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6',
 }
+ARM_FFMPEG_FALLBACK='https://github.com/vanloctech/ffmpeg-macos/releases/download/ffmpeg-2026.06.11/ffmpeg-macos-arm64.tar.gz'
+ARM_FFMPEG_FALLBACK_SHA256='26f5133f88d5ab1254cc03499acef42dae2dbc574dd26e0dade8c968420127e9'
+WINDOWS_FFMPEG_FALLBACK='https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/ffmpeg-n9.0.2-14-gebafaee10a-win64-gpl-9.0.zip'
+WINDOWS_FFMPEG_FALLBACK_SHA256='09170e52cb657f184ba4da2f42567cf2841b661cd9bb5f46ffe4481eb8e6d841'
+ARM_LLAMA_SHA256='5bacea12237283699a196194b7f62a0e613438bd5feed694359ed6050492bb3e'
 def get(url):
- print('Downloading:',url,flush=True)
- with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'ONE-Captions-build'}),timeout=180) as response:return response.read()
+ for attempt in range(3):
+  try:
+   print('Downloading:',url,flush=True)
+   with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'ONE-Captions-build'}),timeout=180) as response:return response.read()
+  except (urllib.error.URLError,TimeoutError):
+   if attempt==2:raise
+   time.sleep(2**attempt)
+def verified(data,digest,label):
+ if hashlib.sha256(data).hexdigest()!=digest:raise RuntimeError(f'{label} checksum mismatch')
+ return data
 def extract_zip(data,keep):
  with zipfile.ZipFile(io.BytesIO(data)) as archive:
   for name in archive.namelist():
@@ -38,16 +51,28 @@ def extract_tar(data,keep):
 if platform.system()=='Darwin':
  machine=platform.machine()
  if machine not in ('x86_64','arm64'):raise SystemExit(f'Unsupported macOS architecture: {machine}')
- for tool in ('ffmpeg','ffprobe'):
-  if machine=='arm64':
-   data=get(f'{ARM_FFMPEG_BASE}/{tool}.zip')
-   assert hashlib.sha256(data).hexdigest()==ARM_FFMPEG_SHA256[tool],f'{tool} checksum mismatch'
-  else:data=get(f'https://evermeet.cx/ffmpeg/getrelease/{tool}/zip')
-  extract_zip(data,lambda name:name==tool)
+ if machine=='arm64':
+  try:
+   archives={tool:verified(get(f'{ARM_FFMPEG_BASE}/{tool}.zip'),ARM_FFMPEG_SHA256[tool],tool) for tool in ('ffmpeg','ffprobe')}
+  except (urllib.error.URLError,TimeoutError) as error:
+   print('Primary Apple Silicon FFmpeg source unavailable:',error,flush=True)
+   data=verified(get(ARM_FFMPEG_FALLBACK),ARM_FFMPEG_FALLBACK_SHA256,'Apple Silicon FFmpeg fallback')
+   extract_tar(data,lambda name:name in ('ffmpeg','ffprobe'))
+  else:
+   for tool,data in archives.items():extract_zip(data,lambda name:name==tool)
+ else:
+  for tool in ('ffmpeg','ffprobe'):
+   extract_zip(get(f'https://evermeet.cx/ffmpeg/getrelease/{tool}/zip'),lambda name:name==tool)
  llama_arch='arm64' if machine=='arm64' else 'x64'
- extract_tar(get(f'https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_TAG}/llama-{LLAMA_TAG}-bin-macos-{llama_arch}.tar.gz'),lambda name:name=='llama-server' or name.endswith('.dylib'))
+ data=get(f'https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_TAG}/llama-{LLAMA_TAG}-bin-macos-{llama_arch}.tar.gz')
+ if machine=='arm64':verified(data,ARM_LLAMA_SHA256,'Apple Silicon llama.cpp')
+ extract_tar(data,lambda name:name=='llama-server' or name.endswith('.dylib'))
 elif platform.system()=='Windows':
- extract_zip(get('https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'),lambda name:name in ('ffmpeg.exe','ffprobe.exe'))
+ try:data=get('https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip')
+ except (urllib.error.URLError,TimeoutError) as error:
+  print('Primary Windows FFmpeg source unavailable:',error,flush=True)
+  data=verified(get(WINDOWS_FFMPEG_FALLBACK),WINDOWS_FFMPEG_FALLBACK_SHA256,'Windows FFmpeg fallback')
+ extract_zip(data,lambda name:name in ('ffmpeg.exe','ffprobe.exe'))
  extract_zip(get(f'https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_TAG}/llama-{LLAMA_TAG}-bin-win-cpu-x64.zip'),lambda name:name=='llama-server.exe' or name.endswith('.dll'))
 else:raise SystemExit('Build on macOS Intel, macOS Apple Silicon or Windows x64.')
 ff=BIN/('ffmpeg.exe' if os.name=='nt' else 'ffmpeg');fp=BIN/('ffprobe.exe' if os.name=='nt' else 'ffprobe');ll=BIN/('llama-server.exe' if os.name=='nt' else 'llama-server')
