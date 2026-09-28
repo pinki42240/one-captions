@@ -53,7 +53,9 @@ for path in root.rglob('*'):
             stream.seek(offset)
             signature = stream.read(4)
             machine = struct.unpack('<H', stream.read(2))[0]
-            if signature != b'PE\0\0' or machine != 0x8664 or mac:
+            # Electron Builder bundles a 32-bit NSIS elevation helper even in x64 apps.
+            allowed_machine = 0x14c if relative == Path('resources/elevate.exe') else 0x8664
+            if signature != b'PE\0\0' or machine != allowed_machine or mac:
                 raise SystemExit(f'Unexpected PE architecture in {relative}: {machine:#x}')
             native_count += 1
         elif head in mach_magics:
